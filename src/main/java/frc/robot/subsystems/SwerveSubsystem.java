@@ -68,6 +68,7 @@ public class SwerveSubsystem extends SubsystemBase {
     public void swerveDrive(Translation2d translation, double rotation, 
         boolean fieldRelative, boolean isOpenLoop) {
         
+        /* Set swerve module states */
         SwerveModuleState[] swerveModuleStates = Swerve.swerveKinematics.toSwerveModuleStates(
             fieldRelative 
             ? ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -75,9 +76,11 @@ public class SwerveSubsystem extends SubsystemBase {
             : new ChassisSpeeds(translation.getX(), translation.getY(), rotation)
         );
 
+        /* Normalize wheel speeds */
         SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, 
             Swerve.maxSpeed);
         
+        /* Set each module */
         for (SwerveModule mod : swerveMods) {
             mod.setDesiredState(swerveModuleStates[mod.moduleID], isOpenLoop);
         }

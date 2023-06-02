@@ -117,11 +117,13 @@ public class SwerveModule {
     }
 
     private void setSpeed(SwerveModuleState desiredState, boolean isOpenLoop) {
+        /* Set speed based on percents */
         if (isOpenLoop) {
             double percentOutput = desiredState.speedMetersPerSecond / Swerve.maxSpeed;
 
             driveMotor.set(percentOutput);
         }
+        /* Set speed based on velocity */
         else {
             driveController.setReference(
                 desiredState.speedMetersPerSecond, 
