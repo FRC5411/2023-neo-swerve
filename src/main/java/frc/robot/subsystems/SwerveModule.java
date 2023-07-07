@@ -8,6 +8,7 @@ import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -30,7 +31,7 @@ public class SwerveModule {
     private CANCoder angleEncoder;
 
     private final SparkMaxPIDController driveController;
-    private final SparkMaxPIDController azimuthController;
+    private final PIDController azimuthController;
 
     private final SimpleMotorFeedforward feedForward;
 
@@ -47,7 +48,7 @@ public class SwerveModule {
         azimuthMotor = new CANSparkMax(moduleConstants.azimutMotorID, 
             MotorType.kBrushless);
         azimuthEncoder = azimuthMotor.getEncoder();
-        azimuthController = azimuthMotor.getPIDController();
+        azimuthController = new PIDController(0.0, 0.0 , 0.0);
         configureAzimuthMotor();
         
         angleEncoder = new CANCoder(moduleConstants.cancoderID);
@@ -98,9 +99,10 @@ public class SwerveModule {
         azimuthController.setP(Swerve.angleKP);
         azimuthController.setI(Swerve.angleKI);
         azimuthController.setD(Swerve.angleKD);
-        azimuthController.setFF(Swerve.angleKFF);
+        // azimuthController.setFF(Swerve.angleKFF);
 
-        azimuthController.setFeedbackDevice(azimuthEncoder);
+        // azimuthController.setFeedbackDevice(azimuthEncoder);
+        azimuthController.enableContinuousInput(-Math.PI, Math.PI);
 
         azimuthMotor.burnFlash();
     }
@@ -135,23 +137,11 @@ public class SwerveModule {
 
     private void setAngle(SwerveModuleState desiredState) {
         Rotation2d angle = 
-            (Math.abs(desiredState.speedMetersPerSecond) <= (Swerve.maxSpeed * 0.01)) // Prevent jittering
+            (Math.abs(desiredState.speedMetersPerSecond) <= (Swerve.maxSpeed * 0.01))
                 ? lastAngle 
                 : desiredState.angle;
-
-        /*
-         * Alright so basically, this extra block
-         * of code below does the job of doing the
-         * function 'enableContinuousInput'. The
-         * reason why you can't just call that
-         * method is because SparkMax is big dumb
-         */
-        double rawInput = angle.getDegrees(); 
-
-        // Map the input value to the -π to π range
-        double adjustedInput = Math.atan2(Math.sin(rawInput), Math.cos(rawInput));
         
-        azimuthController.setReference(adjustedInput, ControlType.kPosition);
+        azimuthMotor.set(azimuthController.calculate(azimuthEncoder.getPosition(), angle.getDegrees()));
         lastAngle = angle;
     }
 
